@@ -1,0 +1,386 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المستخدمين</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #ECEFF1, #CFD8DC);
+            font-family: 'Noto Sans Arabic', sans-serif;
+            color: #212121;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: linear-gradient(to bottom right, #2C3E50, #34495E);
+            color: #E0E0E0;
+        }
+        .navbar {
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .navbar {
+            background-color: #1A1A1A;
+        }
+        .navbar-brand, .nav-link {
+            font-weight: 600;
+            color: #1E88E5 !important;
+            transition: color 0.3s;
+        }
+        body.dark-mode .navbar-brand, body.dark-mode .nav-link {
+            color: #64B5F6 !important;
+        }
+        .nav-link:hover {
+            color: #1565C0 !important;
+        }
+        body.dark-mode .nav-link:hover {
+            color: #42A5F5 !important;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background-color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .card {
+            background-color: #212121;
+        }
+        .btn-primary {
+            background: linear-gradient(to bottom, #66BB6A, #4CAF50);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        body.dark-mode .btn-primary {
+            background: linear-gradient(to bottom, #43A047, #388E3C);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(to bottom, #81C784, #66BB6A);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        .form-control, .form-select {
+            border: 2px solid #B0BEC5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease, background-color 0.3s;
+            background-color: #FAFAFA;
+        }
+        body.dark-mode .form-control, body.dark-mode .form-select {
+            border-color: #616161;
+            background-color: #424242;
+            color: #E0E0E0;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #1E88E5;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .form-control:focus, body.dark-mode .form-select:focus {
+            border-color: #64B5F6;
+        }
+        .table tbody tr:hover {
+            background-color: #F0F4F8;
+            cursor: pointer;
+        }
+        body.dark-mode .table tbody tr:hover {
+            background-color: #424242;
+        }
+        h2 {
+            color: #1E88E5;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        body.dark-mode h2 {
+            color: #64B5F6;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">نظام إدارة العملاء</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="/">عرض العملاء</a>
+                    <a class="nav-link" href="/manage">إدارة العملاء</a>
+                    <a class="nav-link" href="/serverip">إدارة SERVERIP</a>
+                    <a class="nav-link" href="/custserver">إدارة CUSTSERVER</a>
+                    <a class="nav-link" href="/users">إدارة المستخدمين</a>
+                </div>
+                <button id="themeToggle" class="btn btn-outline-primary ms-auto">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="card p-4">
+            <h2>إدارة المستخدمين</h2>
+            <form id="userForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">اسم المستخدم:</label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">كلمة المرور:</label>
+                    <input type="password" class="form-control" id="password" placeholder="اتركه فارغًا إذا لم ترغب في التغيير">
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">الدور:</label>
+                    <select class="form-select" id="role" required>
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
+                <input type="hidden" id="userId">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" onclick="addUser()">إضافة مستخدم</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser()">تعديل المستخدم</button>
+                    <button type="button" class="btn btn-primary" onclick="deleteUser()">حذف المستخدم</button>
+                    <button type="button" class="btn btn-primary" onclick="clearForm()">مسح النموذج</button>
+                </div>
+            </form>
+            <div class="table-responsive mt-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>المعرف</th>
+                            <th>اسم المستخدم</th>
+                            <th>الدور</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const icon = themeToggle.querySelector('i');
+
+        function toggleTheme() {
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'dark') {
+            toggleTheme();
+        }
+
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.classList.add('toast', `bg-${type}`, 'text-white');
+            toast.innerHTML = `
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            document.querySelector('.toast-container').appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/users/data', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('Admin:1691988')  // Replace with dynamic credentials if using sessions
+                    }
+                });
+                if (!response.ok) throw new Error('فشل تحميل البيانات');
+                const users = await response.json();
+                const tbody = document.getElementById('userTable');
+                tbody.innerHTML = '';
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.ID}</td>
+                        <td>${user.Username}</td>
+                        <td>${user.Role}</td>
+                    `;
+                    row.onclick = () => fillForm(user);
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                showToast('خطأ: ' + error.message, 'danger');
+            }
+        }
+
+        function fillForm(user) {
+            document.getElementById('userId').value = user.ID;
+            document.getElementById('username').value = user.Username;
+            document.getElementById('password').value = '';
+            document.getElementById('role').value = user.Role;
+        }
+
+        async function addUser() {
+            const user = {
+                Username: document.getElementById('username').value,
+                Password: document.getElementById('password').value,
+                Role: document.getElementById('role').value
+            };
+            try {
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('Admin:1691988')
+                    },
+                    body: JSON.stringify(user)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message, 'success');
+                    clearForm();
+                    loadUsers();
+                } else {
+                    showToast(result.detail, 'danger');
+                }
+            } catch (error) {
+                showToast('خطأ: ' + error.message, 'danger');
+            }
+        }
+
+        async function updateUser() {
+            const id = document.getElementById('userId').value;
+            if (!id) {
+                showToast('اختر مستخدمًا للتعديل!', 'warning');
+                return;
+            }
+            const user = {
+                Username: document.getElementById('username').value,
+                Password: document.getElementById('password').value || null,
+                Role: document.getElementById('role').value
+            };
+            try {
+                const response = await fetch(`/users/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('Admin:1691988')
+                    },
+                    body: JSON.stringify(user)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message, 'success');
+                    clearForm();
+                    loadUsers();
+                } else {
+                    showToast(result.detail, 'danger');
+                }
+            } catch (error) {
+                showToast('خطأ: ' + error.message, 'danger');
+            }
+        }
+
+        async function deleteUser() {
+            const id = document.getElementById('userId').value;
+            if (!id) {
+                showToast('اختر مستخدمًا للحذف!', 'warning');
+                return;
+            }
+            if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+                try {
+                    const response = await fetch(`/users/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa('Admin:1691988')
+                        }
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast(result.message, 'success');
+                        clearForm();
+                        loadUsers();
+                    } else {
+                        showToast(result.detail, 'danger');
+                    }
+                } catch (error) {
+                    showToast('خطأ: ' + error.message, 'danger');
+                }
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>
+```

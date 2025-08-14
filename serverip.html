@@ -1,0 +1,475 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة CUSTSERVER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #ECEFF1, #CFD8DC);
+            font-family: 'Noto Sans Arabic', sans-serif;
+            color: #212121;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: linear-gradient(to bottom right, #2C3E50, #34495E);
+            color: #E0E0E0;
+        }
+        .navbar {
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .navbar {
+            background-color: #1A1A1A;
+        }
+        .navbar-brand, .nav-link {
+            font-weight: 600;
+            color: #1E88E5 !important;
+            transition: color 0.3s;
+        }
+        body.dark-mode .navbar-brand, body.dark-mode .nav-link {
+            color: #64B5F6 !important;
+        }
+        .nav-link:hover {
+            color: #1565C0 !important;
+        }
+        body.dark-mode .nav-link:hover {
+            color: #42A5F5 !important;
+        }
+        .table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .table {
+            background: #333;
+        }
+        .table thead {
+            background: linear-gradient(to bottom, #42A5F5, #1E88E5);
+            color: white;
+        }
+        body.dark-mode .table thead {
+            background: linear-gradient(to bottom, #1E88E5, #1565C0);
+        }
+        .btn-primary {
+            background: linear-gradient(to bottom, #66BB6A, #4CAF50);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        body.dark-mode .btn-primary {
+            background: linear-gradient(to bottom, #43A047, #388E3C);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(to bottom, #81C784, #66BB6A);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        body.dark-mode .btn-primary:hover {
+            background: linear-gradient(to bottom, #66BB6A, #4CAF50);
+        }
+        .btn-info {
+            background: linear-gradient(to bottom, #29B6F6, #0288D1);
+            border: none;
+        }
+        body.dark-mode .btn-info {
+            background: linear-gradient(to bottom, #0288D1, #0277BD);
+        }
+        .form-control {
+            border: 2px solid #B0BEC5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease, background-color 0.3s;
+            background-color: #FAFAFA;
+        }
+        body.dark-mode .form-control {
+            border-color: #616161;
+            background-color: #424242;
+            color: #E0E0E0;
+        }
+        .form-control:focus {
+            border-color: #1E88E5;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .form-control:focus {
+            border-color: #64B5F6;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background-color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .card {
+            background-color: #212121;
+        }
+        .developer-info {
+            text-align: center;
+            padding: 12px;
+            background: #f5f5f5;
+            color: #333;
+            margin-top: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode .developer-info {
+            background: #333;
+            color: #E0E0E0;
+        }
+        .developer-info a {
+            color: #1E88E5;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .developer-info a:hover {
+            color: #1565C0;
+        }
+        body.dark-mode .developer-info a {
+            color: #64B5F6;
+        }
+        body.dark-mode .developer-info a:hover {
+            color: #42A5F5;
+        }
+        h2 {
+            color: #1E88E5;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        body.dark-mode h2 {
+            color: #64B5F6;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+        .table tbody tr:hover {
+            background-color: #F0F4F8;
+        }
+        body.dark-mode .table tbody tr:hover {
+            background-color: #424242;
+        }
+        .table tbody tr.selected {
+            background-color: #E3F2FD;
+        }
+        body.dark-mode .table tbody tr.selected {
+            background-color: #37474F;
+        }
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: background 0.3s;
+        }
+        body.dark-mode .loader {
+            background: rgba(0,0,0,0.8);
+        }
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left-color: #1E88E5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        body.dark-mode .spinner {
+            border-color: rgba(255,255,255,0.1);
+            border-left-color: #64B5F6;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+     <nav class="navbar navbar-expand-lg mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">نظام إدارة العملاء</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="/">عرض العملاء</a>
+                    <a class="nav-link" href="/manage">إدارة العملاء</a>
+                    <a class="nav-link" href="/serverip">إدارة SERVERIP</a>
+                    <a class="nav-link" href="/custserver">إدارة CUSTSERVER</a>
+                </div>
+                <button id="themeToggle" class="btn btn-outline-primary ms-auto">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="card p-4">
+            <h2>إدارة SERVERIP</h2>
+            <form id="serveripForm">
+                <div class="mb-3">
+                    <label for="ip" class="form-label">IP:</label>
+                    <input type="text" class="form-control" id="ip" placeholder="أدخل IP" required>
+                </div>
+                <div class="mb-3">
+                    <label for="user" class="form-label">USER:</label>
+                    <input type="text" class="form-control" id="user" placeholder="أدخل USER">
+                </div>
+                <div class="mb-3 position-relative">
+                    <label for="pass" class="form-label">كلمة المرور:</label>
+                    <input type="password" class="form-control" id="pass" placeholder="أدخل كلمة المرور تلميح فقط انتبه!">
+                    <button type="button" class="btn btn-outline-secondary position-absolute end-0 top-50 translate-middle-y" style="margin-top: 0.5rem;" onclick="togglePassword('pass')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div class="mb-3">
+                    <label for="serverEmail" class="form-label">ايميل السيرفر:</label>
+                    <input type="email" class="form-control" id="serverEmail" placeholder="أدخل ايميل السيرفر">
+                </div>
+                <div class="mb-3 position-relative">
+                    <label for="emailPass" class="form-label">باسورد الايميل:</label>
+                    <input type="password" class="form-control" id="emailPass" placeholder="أدخل باسورد الايميل ادخل تلميح فقط وليس الباسورد الفعلي انتبه!">
+                    <button type="button" class="btn btn-outline-secondary position-absolute end-0 top-50 translate-middle-y" style="margin-top: 0.5rem;" onclick="togglePassword('emailPass')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <input type="hidden" id="serveripId">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" onclick="addServerIP()">إضافة SERVERIP</button>
+                    <button type="button" class="btn btn-primary" onclick="updateServerIP()">تعديل SERVERIP</button>
+                   <!-- <button type="button" class="btn btn-primary" onclick="deleteServerIP()">حذف SERVERIP</button> -->
+                    <button type="button" class="btn btn-primary" onclick="clearServerIPForm()">مسح النموذج</button>
+                </div>
+            </form>
+            <div class="input-group mt-4 mb-3">
+                <input type="text" id="searchInput" class="form-control" placeholder="البحث بـ IP أو USER...">
+                <button class="btn btn-info" onclick="loadServerIP()">بحث</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>المستخدم</th>
+                            <th>ايميل السيرفر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serveripTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="developer-info">
+        Developed by  سكاي سوفت - X: @skysft.com - Facebook: skysft.com
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const icon = themeToggle.querySelector('i');
+
+        function toggleTheme() {
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            const icon = input.nextElementSibling.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+
+        async function loadServerIP() {
+            const search = document.getElementById('searchInput').value;
+            const response = await fetch(`/serverip/data?search=${encodeURIComponent(search)}`);
+            const serverips = await response.json();
+            const tbody = document.getElementById('serveripTable');
+            tbody.innerHTML = '';
+            serverips.forEach(serverip => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${serverip.IP}</td>
+                    <td>${serverip.USER || ''}</td>
+                    <td>${serverip.SERVER_EMAIL || ''}</td>
+                `;
+                row.onclick = () => fillServerIPForm(serverip);
+                tbody.appendChild(row);
+            });
+        }
+
+        function fillServerIPForm(serverip) {
+            document.getElementById('serveripId').value = serverip.IP;
+            document.getElementById('ip').value = serverip.IP;
+            document.getElementById('user').value = serverip.USER || '';
+            document.getElementById('pass').value = serverip.PASS || '';
+            document.getElementById('serverEmail').value = serverip.SERVER_EMAIL || '';
+            document.getElementById('emailPass').value = serverip.EMAIL_PASS || '';
+        }
+
+        async function addServerIP() {
+            const serverip = {
+                IP: document.getElementById('ip').value,
+                USER: document.getElementById('user').value || null,
+                PASS: document.getElementById('pass').value || null,
+                SERVER_EMAIL: document.getElementById('serverEmail').value || null,
+                EMAIL_PASS: document.getElementById('emailPass').value || null
+            };
+            try {
+                const response = await fetch('/serverip', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(serverip)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    clearServerIPForm();
+                    loadServerIP();
+                } else {
+                    alert(result.detail);
+                }
+            } catch (error) {
+                alert('خطأ: ' + error.message);
+            }
+        }
+
+        async function updateServerIP() {
+            const ip = document.getElementById('serveripId').value;
+            if (!ip) {
+                alert('اختر SERVERIP للتعديل!');
+                return;
+            }
+            const serverip = {
+                IP: document.getElementById('ip').value,
+                USER: document.getElementById('user').value || null,
+                PASS: document.getElementById('pass').value || null,
+                SERVER_EMAIL: document.getElementById('serverEmail').value || null,
+                EMAIL_PASS: document.getElementById('emailPass').value || null
+            };
+            try {
+                const response = await fetch(`/serverip/${ip}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(serverip)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    clearServerIPForm();
+                    loadServerIP();
+                } else {
+                    alert(result.detail);
+                }
+            } catch (error) {
+                alert('خطأ: ' + error.message);
+            }
+        }
+
+        async function deleteServerIP() {
+            const ip = document.getElementById('serveripId').value;
+            if (!ip) {
+                alert('اختر SERVERIP للحذف!');
+                return;
+            }
+            if (confirm('هل أنت متأكد من حذف هذا SERVERIP؟')) {
+                try {
+                    const response = await fetch(`/serverip/${ip}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message);
+                        clearServerIPForm();
+                        loadServerIP();
+                    } else {
+                        alert(result.detail);
+                    }
+                } catch (error) {
+                    alert('خطأ: ' + error.message);
+                }
+            }
+        }
+
+        function clearServerIPForm() {
+            document.getElementById('serveripForm').reset();
+            document.getElementById('serveripId').value = '';
+        }
+
+        loadServerIP();
+        document.getElementById('searchInput').addEventListener('input', loadServerIP);
+    </script>
+</body>
+</html>

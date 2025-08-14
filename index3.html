@@ -1,0 +1,468 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة العملاء</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #ECEFF1, #CFD8DC);
+            font-family: 'Noto Sans Arabic', sans-serif;
+            color: #212121;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: linear-gradient(to bottom right, #2C3E50, #34495E);
+            color: #E0E0E0;
+        }
+        .navbar {
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .navbar {
+            background-color: #1A1A1A;
+        }
+        .navbar-brand, .nav-link {
+            font-weight: 600;
+            color: #1E88E5 !important;
+            transition: color 0.3s;
+        }
+        body.dark-mode .navbar-brand, body.dark-mode .nav-link {
+            color: #64B5F6 !important;
+        }
+        .nav-link:hover {
+            color: #1565C0 !important;
+        }
+        body.dark-mode .nav-link:hover {
+            color: #42A5F5 !important;
+        }
+        .table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .table {
+            background: #333;
+        }
+        .table thead {
+            background: linear-gradient(to bottom, #42A5F5, #1E88E5);
+            color: white;
+        }
+        body.dark-mode .table thead {
+            background: linear-gradient(to bottom, #1E88E5, #1565C0);
+        }
+        .btn-primary {
+            background: linear-gradient(to bottom, #66BB6A, #4CAF50);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        body.dark-mode .btn-primary {
+            background: linear-gradient(to bottom, #43A047, #388E3C);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(to bottom, #81C784, #66BB6A);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        body.dark-mode .btn-primary:hover {
+            background: linear-gradient(to bottom, #66BB6A, #4CAF50);
+        }
+        .btn-info {
+            background: linear-gradient(to bottom, #29B6F6, #0288D1);
+            border: none;
+        }
+        body.dark-mode .btn-info {
+            background: linear-gradient(to bottom, #0288D1, #0277BD);
+        }
+        .form-control {
+            border: 2px solid #B0BEC5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease, background-color 0.3s;
+            background-color: #FAFAFA;
+        }
+        body.dark-mode .form-control {
+            border-color: #616161;
+            background-color: #424242;
+            color: #E0E0E0;
+        }
+        .form-control:focus {
+            border-color: #1E88E5;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .form-control:focus {
+            border-color: #64B5F6;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background-color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode .card {
+            background-color: #212121;
+        }
+        .developer-info {
+            text-align: center;
+            padding: 12px;
+            background: #f5f5f5;
+            color: #333;
+            margin-top: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode .developer-info {
+            background: #333;
+            color: #E0E0E0;
+        }
+        .developer-info a {
+            color: #1E88E5;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .developer-info a:hover {
+            color: #1565C0;
+        }
+        body.dark-mode .developer-info a {
+            color: #64B5F6;
+        }
+        body.dark-mode .developer-info a:hover {
+            color: #42A5F5;
+        }
+        h2 {
+            color: #1E88E5;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        body.dark-mode h2 {
+            color: #64B5F6;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+        .table tbody tr:hover {
+            background-color: #F0F4F8;
+        }
+        body.dark-mode .table tbody tr:hover {
+            background-color: #424242;
+        }
+        .table tbody tr.selected {
+            background-color: #E3F2FD;
+        }
+        body.dark-mode .table tbody tr.selected {
+            background-color: #37474F;
+        }
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: background 0.3s;
+        }
+        body.dark-mode .loader {
+            background: rgba(0,0,0,0.8);
+        }
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left-color: #1E88E5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        body.dark-mode .spinner {
+            border-color: rgba(255,255,255,0.1);
+            border-left-color: #64B5F6;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">نظام إدارة العملاء</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="/">عرض العملاء</a>
+                    <a class="nav-link" href="/manage">إدارة العملاء</a>
+                    <a class="nav-link" href="/serverip">إدارة SERVERIP</a>
+                    <a class="nav-link" href="/custserver">إدارة CUSTSERVER</a>
+                </div>
+                <button id="themeToggle" class="btn btn-outline-primary ms-auto">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="card p-4">
+            <h2>عرض العملاء</h2>
+            <div class="input-group mb-3">
+                <input type="text" id="searchInput" class="form-control" placeholder="البحث باسم العميل أو رقم العميل...">
+                <button class="btn btn-info" onclick="loadCustomers()">بحث</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped" id="customerTable">
+                    <thead>
+                        <tr>
+                            <th>المعرف</th>
+                            <th>رقم العميل</th>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>العنوان</th>
+                            <th>الرقم الضريبي</th>
+                            <th>العنوان الوطني</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerBody"></tbody>
+                </table>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" onclick="exportToExcel()">تصدير إلى Excel</button>
+                <button class="btn btn-primary" onclick="exportToPDF()">طباعة العملاء بي دي اف</button>
+            </div>
+        </div>
+    </div>
+    <div class="developer-info">
+        Developed by <span class="fw-bold">سكاي سوفت</span> 
+        <a href="https://skysft.com/" target="_blank">skysft</a>
+        <a href="https://x.com/skysft" target="_blank"><i class="fab fa-twitter ms-2"></i> @skysft</a> 
+        <a href="https://www.facebook.com/Skysoft.sa/" target="_blank"><i class="fab fa-facebook ms-2"></i> skysft</a>
+    </div>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="/static/jspdf.umd.min.js"></script>
+<script src="/static/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const icon = themeToggle.querySelector('i');
+
+        function toggleTheme() {
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'dark') {
+            toggleTheme();
+        }
+
+        // Loader
+        const loader = document.getElementById('loader');
+
+        function showLoader() {
+            loader.style.display = 'flex';
+        }
+
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.classList.add('toast', `bg-${type}`, 'text-white');
+            toast.innerHTML = `
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            document.querySelector('.toast-container').appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function loadCustomers() {
+            showLoader();
+            const search = document.getElementById('searchInput').value;
+            try {
+                const response = await fetch(`/customers?search=${encodeURIComponent(search)}`);
+                if (!response.ok) throw new Error('فشل تحميل البيانات');
+                const customers = await response.json();
+                const tbody = document.getElementById('customerBody');
+                tbody.innerHTML = '';
+                customers.forEach(customer => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${customer.ID}</td>
+                        <td>${customer.CustomerNumber || ''}</td>
+                        <td>${customer.Name || ''}</td>
+                        <td>${customer.Phone || ''}</td>
+                        <td>${customer.Email || ''}</td>
+                        <td>${customer.Address || ''}</td>
+                        <td>${customer.TaxNumber || ''}</td>
+                        <td>${customer.NationalAddress || ''}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                showToast('خطأ في تحميل البيانات: ' + error.message, 'danger');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function exportToExcel() {
+            try {
+                const table = document.getElementById('customerTable');
+                if (!table) throw new Error('الجدول غير موجود');
+                const wb = XLSX.utils.table_to_book(table, { sheet: "العملاء" });
+                XLSX.writeFile(wb, 'customers.xlsx');
+                showToast('تم التصدير إلى Excel بنجاح', 'success');
+            } catch (error) {
+                showToast('خطأ في التصدير إلى Excel: ' + error.message, 'danger');
+            }
+        }
+
+        function exportToPDF() {
+            try {
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                    throw new Error('مكتبة jsPDF غير محملة');
+                }
+                if (typeof window.autoTable === 'undefined') {
+                    throw new Error('مكتبة jspdf-autotable غير محملة');
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                doc.addFont('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600&display=swap', 'Noto Sans Arabic', 'normal');
+                doc.setFont('Noto Sans Arabic');
+
+                const table = document.getElementById('customerTable');
+                if (!table) throw new Error('الجدول غير موجود');
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+                const rows = Array.from(table.querySelectorAll('tbody tr')).map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent));
+
+                if (rows.length === 0) {
+                    showToast('لا توجد بيانات للتصدير', 'warning');
+                    return;
+                }
+
+                doc.text('قائمة العملاء', 140, 10, { align: 'center' });
+                doc.autoTable({
+                    head: [headers],
+                    body: rows,
+                    styles: {
+                        font: 'Noto Sans Arabic',
+                        fontStyle: 'normal',
+                        textDirection: 'rtl',
+                        halign: 'center',
+                        valign: 'middle',
+                        fontSize: 10
+                    },
+                    headStyles: {
+                        fillColor: [33, 150, 243],
+                        textColor: [255, 255, 255],
+                        fontSize: 12
+                    },
+                    bodyStyles: {
+                        textColor: [0, 0, 0]
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    margin: { top: 20 },
+                    theme: 'grid'
+                });
+
+                doc.save('customers.pdf');
+                showToast('تم التصدير إلى PDF بنجاح', 'success');
+            } catch (error) {
+                showToast('خطأ في التصدير إلى PDF: ' + error.message, 'danger');
+                console.error('PDF Export Error:', error);
+            }
+        }
+
+        loadCustomers();
+        document.getElementById('searchInput').addEventListener('input', loadCustomers);
+    </script>
+</body>
+</html>
+```
